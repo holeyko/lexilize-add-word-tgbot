@@ -1,0 +1,1 @@
+# lexilize-add-word-tgbot
