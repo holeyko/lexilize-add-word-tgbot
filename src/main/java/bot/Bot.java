@@ -1,7 +1,5 @@
 package bot;
 
-import help.FilesController;
-import jxl.write.WriteException;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -11,10 +9,12 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import sheets.FileIsNotExcelException;
 import sheets.SheetsControler;
+import util.Config;
+import util.FilesController;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
@@ -27,14 +27,15 @@ public class Bot extends TelegramLongPollingBot {
     private Map<String, ReplyKeyboardMarkup> preparedKeyboardMarkups;
     private RequestContextHistory contextHistory;
 
-    private final List<String> COMMANDS = List.of("/start", "/help");
-    public static final int HISTORY_LENGTH = 4;
-    public static final int COUNT_BUTTONS_IN_ROW = 2;
+    private final List<String> COMMANDS = List.of("/start", "/util");
+    private static final int HISTORY_LENGTH = 4;
+    private static final int COUNT_BUTTONS_IN_ROW = 2;
+    private final String SHEET_NAME = "Lexillize";
 
-    public Bot(String name, String token, FilesController filesController) {
+    public Bot(String name, String token) {
         this.name = name;
         this.token = token;
-        this.filesController = filesController;
+        this.filesController = new FilesController(Config.PATH_TO_RESOURCES);
         this.contextHistory = new RequestContextHistory(HISTORY_LENGTH);
 
         this.preparedKeyboardMarkups = new HashMap<>();
@@ -44,7 +45,7 @@ public class Bot extends TelegramLongPollingBot {
             List<KeyboardRow> rows = new ArrayList<>();
             KeyboardRow firstRow = new KeyboardRow();
             KeyboardRow secondRow = new KeyboardRow();
-            
+
             firstRow.add(Buttons.CREATE_WORDS.innerText);
             secondRow.add(Buttons.CREATE_PACK.innerText);
             secondRow.add(Buttons.EXPORT_PACK.innerText);
@@ -85,7 +86,7 @@ public class Bot extends TelegramLongPollingBot {
             if (COMMANDS.contains(messageText)) {
                 switch (messageText) {
                     case "/start" -> returnText = "start"; //TODO: write start message
-                    case "/help" -> returnText = "help"; //TODO: write help message
+                    case "/util" -> returnText = "util"; //TODO: write help message
                     default -> {
                         break; //TODO: write err log
                     }
@@ -96,7 +97,7 @@ public class Bot extends TelegramLongPollingBot {
                 returnText = "write pack's name"; //TODO: write pack's name message
                 returnKeyboardMarkup = preparedKeyboardMarkups.get("return-to-main");
                 stateAfterRequest = UserState.WRITING_PACK_NAME;
-            } else if (messageText.equals(Buttons.EXPORT_PACK) || messageText.equals(Buttons.CREATE_WORDS)) {
+            } else if (messageText.equals(Buttons.EXPORT_PACK.innerText) || messageText.equals(Buttons.CREATE_WORDS.innerText)) {
                 List<KeyboardRow> rows = keyboardRowsChoosingPack(chatId);
                 if (rows.isEmpty()) {
                     returnText = "you haven't any pack"; //TODO: write a message
@@ -118,16 +119,23 @@ public class Bot extends TelegramLongPollingBot {
 
                     if (prevUserState == UserState.WRITING_PACK_NAME) {
                         try {
-                            filesController.createFile(getPathToFile(Long.toString(chatId), messageText + ".xlsx"));
+                            sheetsControler.createExcelFromFile(
+                                    filesController.createFile(getPathToFile(
+                                            Long.toString(chatId), messageText + "." + Config.SHEET_FILE_FORMAT
+                                    ))
+                            );
                             returnText = "successful"; //TODO: write a message
                         } catch (IOException e) {
                             returnText = "incorrect pack's name format"; //TODO: write a message
                         }
                     } else if (prevUserState == UserState.CHOOSING_PACK) {
-                        if (prevText.equals(Buttons.EXPORT_PACK)) {
+                        if (prevText.equals(Buttons.EXPORT_PACK.innerText)) {
                             try {
-                                File excel = filesController.openFile(getPathToFile(Long.toString(chatId), messageText + ".xlsx"));
+                                File excel = filesController.openFile(getPathToFile(
+                                        Long.toString(chatId), messageText + "." + Config.SHEET_FILE_FORMAT
+                                ));
                                 SendDocument returnExcel = new SendDocument(Long.toString(chatId), new InputFile(excel));
+                                contextHistory.addContext(update, UserState.NOTHING);
                                 execute(returnExcel);
                                 return;
                             } catch (IllegalArgumentException e) {
@@ -135,7 +143,7 @@ public class Bot extends TelegramLongPollingBot {
                             } catch (TelegramApiException e) {
                                 throw new RuntimeException(e); //TODO: send err log
                             }
-                        } else if (prevText.equals(Buttons.CREATE_WORDS)) {
+                        } else if (prevText.equals(Buttons.CREATE_WORDS.innerText)) {
                             returnText = "write words as \"word | phrase : translation\" without quotes"; //TODO: write a message
                             stateAfterRequest = UserState.WRITING_WORDS;
                             returnKeyboardMarkup = preparedKeyboardMarkups.get("return-to-main");
@@ -144,14 +152,11 @@ public class Bot extends TelegramLongPollingBot {
                         try {
                             Scanner scan = new Scanner(messageText);
                             StringBuilder sb = new StringBuilder(); //TODO: write a message
-                            int curRow = sheetsControler.countWrittenRows(
-                                    getPathToFile(Long.toString(chatId), messageText + ".xlsx"),
-                                    "Lexillize"
-                            );
-                            sheetsControler.openToWrite(
-                                    getPathToFile(Long.toString(chatId), messageText + ".xlsx"),
-                                    "Lexillize"
-                            );
+                            File excel = filesController.openFile(getPathToFile(Long.toString(chatId), prevText + "." + Config.SHEET_FILE_FORMAT));
+                            FileInputStream excelInputStream = new FileInputStream(excel);
+                            sheetsControler.openExcelFile(excelInputStream);
+                            excelInputStream.close();
+                            int curRow = sheetsControler.getCountRowInSheet(SHEET_NAME);
                             while (scan.hasNextLine()) {
                                 String line = scan.nextLine();
                                 String[] parsedLine = line.split(":");
@@ -166,12 +171,14 @@ public class Bot extends TelegramLongPollingBot {
                                     if (word.isBlank() || translation.isBlank()) {
                                         sb.append("\t" + line + "\n");
                                     } else {
-                                        sheetsControler.write("Lexillize", curRow, 0, word);
-                                        sheetsControler.write("Lexillize", curRow, 1, translation);
+                                        sheetsControler.writeOneCell(SHEET_NAME, curRow, 0, word);
+                                        sheetsControler.writeOneCell(SHEET_NAME, curRow, 1, translation);
                                         ++curRow;
                                     }
                                 }
                             }
+                            sheetsControler.writeToFile(excel);
+                            sheetsControler.close();
 
                             if (sb.isEmpty()) {
                                 returnText = "add words were successful added"; //TODO: write a message
@@ -179,10 +186,6 @@ public class Bot extends TelegramLongPollingBot {
                                 sb.append("other words were successful added");
                                 returnText = sb.toString();
                             }
-                        } catch (FileIsNotExcelException e) {
-                            throw new RuntimeException(e); //TODO: write err log
-                        } catch (WriteException e) {
-                            throw new RuntimeException(e); //TODO: write err log
                         } catch (IOException e) {
                             throw new RuntimeException(e); //TODO: write err log
                         }
@@ -190,8 +193,10 @@ public class Bot extends TelegramLongPollingBot {
                 }
             }
 
+            returnMessage.setChatId(chatId);
             returnMessage.setText(returnText);
             returnMessage.setReplyMarkup(returnKeyboardMarkup);
+            contextHistory.addContext(update, stateAfterRequest);
             try {
                 execute(returnMessage);
             } catch (TelegramApiException e) {
@@ -206,6 +211,24 @@ public class Bot extends TelegramLongPollingBot {
         return new File(new File(pathToFolder), fileName).getPath();
     }
 
+    private List<KeyboardRow> keyboardRowsChoosingPack(Long chatId) {
+        List<KeyboardRow> rows = new ArrayList<>();
+        KeyboardRow row = new KeyboardRow();
+
+        for (String packName : filesController.getAllNamesFileSameType(Long.toString(chatId), Config.SHEET_FILE_FORMAT)) {
+            row.add(packName.substring(0, packName.length() - Config.SHEET_FILE_FORMAT.length() - 1));
+            if (row.size() >= COUNT_BUTTONS_IN_ROW) {
+                rows.add(row);
+                row = new KeyboardRow();
+            }
+        }
+
+        if (row.size() > 0) {
+            rows.add(row);
+        }
+        return rows;
+    }
+
     @Override
     public String getBotToken() {
         return token;
@@ -214,22 +237,6 @@ public class Bot extends TelegramLongPollingBot {
     @Override
     public String getBotUsername() {
         return name;
-    }
-
-    private List<KeyboardRow> keyboardRowsChoosingPack(Long chatId) {
-        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
-        List<KeyboardRow> rows = new ArrayList<>();
-        KeyboardRow row = new KeyboardRow();
-
-        for (String packName : filesController.getAllNamesFileSameType(Long.toString(chatId), ".xlsx")) {
-            row.add(packName);
-            if (row.size() >= COUNT_BUTTONS_IN_ROW) {
-                rows.add(row);
-                row = new KeyboardRow();
-            }
-        }
-
-        return rows;
     }
 
     private enum Buttons {
@@ -249,8 +256,8 @@ public class Bot extends TelegramLongPollingBot {
 
     private enum UserState {
         NOTHING,
-        WRITING_PACK_NAME, REMOVING_PACK, CHOOSING_PACK, SEND_PACK,
-        CREATING_WORDS, WRITING_WORDS
+        WRITING_PACK_NAME, CHOOSING_PACK,
+        WRITING_WORDS
     }
 
     private class RequestContext {
