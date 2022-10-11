@@ -1,4 +1,4 @@
-package help;
+package util;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,13 +32,14 @@ public class FilesController {
         }
     }
 
-    public void createFile(String pathToFile) throws IOException {
+    public File createFile(String pathToFile) throws IOException {
         File file = new File(this.root, pathToFile);
 
         if (file.exists()) {
             throw new IllegalArgumentException("This file: " + file.getPath() + " already exists");
         }
         file.createNewFile();
+        return file;
     }
 
     public List<String> getAllNamesFileSameType(String pathToFolder, String type) {
