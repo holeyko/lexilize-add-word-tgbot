@@ -1,112 +1,82 @@
 package sheets;
 
-import jxl.Cell;
-import jxl.Sheet;
-import jxl.Workbook;
-import jxl.read.biff.BiffException;
-import jxl.write.Label;
-import jxl.write.WritableSheet;
-import jxl.write.WritableWorkbook;
-import jxl.write.WriteException;
-import jxl.write.biff.RowsExceededException;
-import org.telegram.telegrambots.meta.generics.Webhook;
-import org.telegram.telegrambots.meta.generics.WebhookBot;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import util.Config;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+
 
 public class SheetsControler {
-    private WritableWorkbook sheetsWriter;
-    private Workbook sheetsReader;
+    private Workbook workbook;
 
-    public void openToWrite(String pathToFile, String sheetName) throws IllegalArgumentException, FileIsNotExcelException {
-        if (isExcelFile(pathToFile)) {
-            throw new FileIsNotExcelException(pathToFile);
-        }
-
-        File excel = new File(pathToFile);
-        if (!excel.exists()) {
-            throw new IllegalArgumentException(String.format("File %s doesn't exist", pathToFile));
-        }
-
+    public void openExcelFile(FileInputStream fileInputStream) throws IOException {
         try {
-            sheetsWriter = Workbook.createWorkbook(excel);
-            if (sheetsWriter.getNumberOfSheets() == 0) {
-                sheetsWriter.createSheet(sheetName, 0);
-            }
+            workbook = WorkbookFactory.create(fileInputStream);
         } catch (IOException e) {
-            closeWrite();
-            //TODO: write err log
+            throw new IOException(e);  //TODO: write err log
         }
     }
 
-    public void write(String sheetName, int row, int column, String value) throws IOException, WriteException {
-        if (sheetsWriter == null) {
-            throw new IOException("Sheet Writer is close");
-        }
-        closeRead();
-        try {
-            WritableSheet sheet = sheetsWriter.getSheet(sheetName);
-            Label label = new Label(row, column, value);
-            sheet.addCell(label);
-        } catch (WriteException e) {
-            throw e;
-        }
+    public void createExcelFromFile(File excel) throws IOException {
+        workbook = new XSSFWorkbook();
+        workbook.write(new FileOutputStream(excel));
     }
 
-    public int countWrittenRows(String pathToFile, String sheetName) throws FileIsNotExcelException {
-        if (isExcelFile(pathToFile)) {
-            throw new FileIsNotExcelException(pathToFile);
-        }
-        closeWrite();
-        File excel = new File(pathToFile);
-        if (!excel.exists()) {
-            throw new IllegalArgumentException(String.format("File %s doesn't exist"));
+    public void writeOneCell(String sheetName, int rowIndex, int columnIndex, String value) throws IOException {
+        if (workbook == null) {
+            throw new IOException(String.format("SheetControler hasn't open file"));
         }
 
-        int countRows = 0;
-        try {
-            sheetsReader = Workbook.getWorkbook(excel);
-            Sheet sheet = sheetsReader.getSheet(sheetName);
+        Sheet sheet;
+        if ((sheet = workbook.getSheet(sheetName)) == null) {
+            sheet = workbook.createSheet(sheetName);
+        }
 
-            for (int i = 0;;++i) {
-                Cell cell = sheet.getCell(i, 0);
-                if (cell.getContents() == null) {
-                    countRows = i;
-                    break;
-                }
-            }
-        } catch (BiffException e) {
-            throw new RuntimeException(e); //TODO: write a err log
+        Row row;
+        Cell cell;
+        if ((row = sheet.getRow(rowIndex)) == null) {
+            row = sheet.createRow(rowIndex);
+        }
+        if ((cell = row.getCell(columnIndex)) == null) {
+            cell = row.createCell(columnIndex);
+        }
+        cell.setCellValue(value);
+    }
+
+    public void writeToFile(File excel) throws IOException {
+        if (workbook == null) {
+            throw new IOException(String.format("SheetControler hasn't open file"));
+        }
+
+        try (OutputStream fileOutputStream = new FileOutputStream(excel)) {
+            workbook.write(fileOutputStream);
+        } catch (FileNotFoundException e) {
+            throw new IllegalArgumentException(String.format("File %s doesn't exist", excel.getPath()));
         } catch (IOException e) {
-            throw new RuntimeException(e); //TODO: write a err log
-        }
-
-        closeWrite();
-        return countRows;
-    }
-
-    public void closeWrite() {
-        if (sheetsWriter != null) {
-            try {
-                sheetsWriter.close();
-            } catch (WriteException | IOException e) {
-                //TODO: write err log
-            }
+            throw new IOException(String.format("Failed in writing to file %s", excel.getPath()));
         }
     }
 
-    public void closeRead() {
-        if (sheetsReader != null) {
-            try {
-                sheetsWriter.close();
-            } catch (WriteException | IOException e) {
-                //TODO: write err log
-            }
-        }
+    public void close() throws IOException {
+        workbook.close();
     }
 
-    private boolean isExcelFile(String pathToFile) {
-        return pathToFile.endsWith(".xlsx") || pathToFile.endsWith(".xls");
+    public int getCountRowInSheet(String sheetName) throws IOException {
+        if (workbook == null) {
+            throw new IOException(String.format("SheetControler hasn't open file"));
+        }
+
+        Sheet sheet = workbook.getSheet(sheetName);
+        if (sheet == null) {
+            workbook.createSheet(sheetName);
+            return 0;
+        }
+
+        return sheet.getLastRowNum() + 1;
+    }
+
+    private boolean isExcelFile(File file) {
+        return file.getPath().endsWith("." + Config.SHEET_FILE_FORMAT);
     }
 }
