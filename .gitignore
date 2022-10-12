@@ -11,3 +11,4 @@ target/
 
 ### Credentials ###
 run.sh
+src/main/data/
