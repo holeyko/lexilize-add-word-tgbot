@@ -6,7 +6,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 
 
-public class SheetsControler {
+public class SheetsController {
     private Workbook workbook;
 
     public void openExcelFile(File file) throws IOException {
