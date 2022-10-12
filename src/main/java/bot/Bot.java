@@ -198,6 +198,7 @@ public class Bot extends TelegramLongPollingBot {
                                     ));
 
                                     SendDocument returnExcel = new SendDocument(Long.toString(chatId), new InputFile(excel));
+                                    returnExcel.setReplyMarkup(preparedKeyboardMarkups.get("main"));
                                     contextHistory.addContext(update, UserState.NOTHING);
                                     execute(returnExcel);
                                     return;
@@ -232,7 +233,7 @@ public class Bot extends TelegramLongPollingBot {
                                 String[] parsedLine = line.split(":");
 
                                 if (parsedLine.length != 2) {
-                                    sb.append("\t line " + line + " has incorrect format\n");
+                                    sb.append("\t" + line + " has incorrect format\n");
                                 } else {
                                     String word = parsedLine[0].trim();
                                     String translation = parsedLine[1].trim();
