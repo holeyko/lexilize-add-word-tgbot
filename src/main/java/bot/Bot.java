@@ -32,7 +32,7 @@ public class Bot extends TelegramLongPollingBot {
     private static final int HISTORY_LENGTH = 4;
     private static final int COUNT_BUTTONS_IN_ROW = 2;
     private static final int MAX_LENGTH_FILE_NAME = 30;
-    private static final String[] FORBIDDEN_CHAR_SEQUANCE_IN_FILE_NAME = new String[] {".", "/", "\\", "~"};
+    private static final String[] FORBIDDEN_CHAR_SEQUANCE_IN_FILE_NAME = new String[] {"/", "\\", "~"};
 
     public Bot(String name, String token) {
         this.name = name;
@@ -73,10 +73,16 @@ public class Bot extends TelegramLongPollingBot {
 
             if (COMMANDS.contains(messageText)) {
                 switch (messageText) {
-                    case "/start", "/help" -> returnText = """
-                            Hello, I'm Lexillize Bot
-                            I will help you learn English
-                            You can create packs, add words to packs, export packs to import its in Lexillize app and delete packs
+                    case "/start", "/help" -> returnText =
+                           """
+                           Welcome to Lexillize Bot.
+                           I'll help you to learn English.
+                           You can:
+                               - Create Pack
+                               - Delete Pack
+                               - Add several words in a pack
+                               - Export an excel file and then import it in Lexillize app
+                               - Show information about packs
                             """;
                     case "/main" -> returnText = "Main menu";
                     default -> {
@@ -86,7 +92,7 @@ public class Bot extends TelegramLongPollingBot {
             } else if (messageText.equals(Buttons.MAIN_MENU.innerText)) {
                 returnText = "Main menu";
             } else if (messageText.equals(Buttons.CREATE_PACK.innerText)) {
-                returnText = "Write a pack's name";
+                returnText = "Pack name mustn't have '/', '\\', '~' symbols.";
                 returnKeyboardMarkup = preparedKeyboardMarkups.get("return-to-main");
                 stateAfterRequest = UserState.WRITING_PACK_NAME;
             } else if (messageText.equals(Buttons.SHOW_PACKS.innerText)) {
