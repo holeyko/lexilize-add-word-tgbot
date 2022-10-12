@@ -102,6 +102,12 @@ public class Bot extends TelegramLongPollingBot {
                         sb.append(pack.getName() + ": failed to collect information about this pack");
                         sb.append("\n");
                         SimpleLog.err("Error while collecting pack's information. Error: " + e);
+                    } finally {
+                        try {
+                            sheetsController.close();
+                        } catch (IOException e) {
+                            SimpleLog.err(e.toString());
+                        }
                     }
                 }
 
@@ -154,8 +160,10 @@ public class Bot extends TelegramLongPollingBot {
                                     ))
                             );
                             returnText = messageText + " pack have been successful created.";
-                        } catch (IOException e) {
+                        } catch (IllegalArgumentException e) {
                             returnText = messageText + " pack already exists";
+                        } catch (IOException e) {
+                            returnText = messageText + " pack has incorrect name";
                         }
                     } else if (prevUserState == UserState.CHOOSING_PACK) {
                         if (prevText.equals(Buttons.DELETE_PACK.innerText)) {
