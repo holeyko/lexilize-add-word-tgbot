@@ -166,40 +166,50 @@ public class Bot extends TelegramLongPollingBot {
                             returnText = messageText + " pack has incorrect name";
                         }
                     } else if (prevUserState == UserState.CHOOSING_PACK) {
-                        if (prevText.equals(Buttons.DELETE_PACK.innerText)) {
-                            try {
-                                dataController.removeFile(getPathToFile(Long.toString(chatId), messageText + "." + Config.SHEET_FILE_FORMAT));
-                                returnText = messageText + " pack will be deleted soon.";
-                            } catch (IllegalArgumentException | IOException e) {
-                                returnText = "Something went wrong.";
-                                SimpleLog.err("Error while deleting a file: " + messageText + "." + Config.SHEET_FILE_FORMAT + " Error: " + e);
+                        boolean isPackExists = false;
+                        for (File pack : dataController.getAllNamesFileSameType(Long.toString(chatId), Config.SHEET_FILE_FORMAT)) {
+                            if (messageText.equals(removeFileExtension(pack.getName(), Config.SHEET_FILE_FORMAT))) {
+                                isPackExists = true;
                             }
                         }
-                        if (prevText.equals(Buttons.EXPORT_PACK.innerText)) {
-                            try {
-                                File excel = dataController.openFile(getPathToFile(
-                                        Long.toString(chatId), messageText + "." + Config.SHEET_FILE_FORMAT
-                                ));
-
-                                SendDocument returnExcel = new SendDocument(Long.toString(chatId), new InputFile(excel));
-                                contextHistory.addContext(update, UserState.NOTHING);
-                                execute(returnExcel);
-                                return;
-                            } catch (TelegramApiException | IllegalArgumentException e) {
-                                returnText = "Something went wrong, sorry.\nRepeat an action later";
-                                SimpleLog.err("Error while creating Excel file: " + messageText + "." + Config.SHEET_FILE_FORMAT + " Error: " + e);
+                        if (!isPackExists) {
+                            returnText = messageText + " pack doesn't exist.";
+                        } else {
+                            if (prevText.equals(Buttons.DELETE_PACK.innerText)) {
+                                try {
+                                    dataController.removeFile(getPathToFile(Long.toString(chatId), messageText + "." + Config.SHEET_FILE_FORMAT));
+                                    returnText = messageText + " pack will be deleted soon.";
+                                } catch (IllegalArgumentException | IOException e) {
+                                    returnText = "Something went wrong.";
+                                    SimpleLog.err("Error while deleting a file: " + messageText + "." + Config.SHEET_FILE_FORMAT + " Error: " + e);
+                                }
                             }
-                        } else if (prevText.equals(Buttons.CREATE_WORDS.innerText)) {
-                            returnText = """
-                                    Write words as "word | phrase : translation" without quotes.
-                                    You can write several words. 
-                                    Example: 
-                                        dog : dog's translate,
-                                        cat : cat's translate,
-                                        hedgehog : hedgehog's translate
-                                    """;
-                            stateAfterRequest = UserState.WRITING_WORDS;
-                            returnKeyboardMarkup = preparedKeyboardMarkups.get("return-to-main");
+                            if (prevText.equals(Buttons.EXPORT_PACK.innerText)) {
+                                try {
+                                    File excel = dataController.openFile(getPathToFile(
+                                            Long.toString(chatId), messageText + "." + Config.SHEET_FILE_FORMAT
+                                    ));
+
+                                    SendDocument returnExcel = new SendDocument(Long.toString(chatId), new InputFile(excel));
+                                    contextHistory.addContext(update, UserState.NOTHING);
+                                    execute(returnExcel);
+                                    return;
+                                } catch (TelegramApiException | IllegalArgumentException e) {
+                                    returnText = "Something went wrong, sorry.\nRepeat an action later";
+                                    SimpleLog.err("Error while creating Excel file: " + messageText + "." + Config.SHEET_FILE_FORMAT + " Error: " + e);
+                                }
+                            } else if (prevText.equals(Buttons.CREATE_WORDS.innerText)) {
+                                returnText = """
+                                        Write words as "word | phrase : translation" without quotes.
+                                        You can write several words. 
+                                        Example: 
+                                            dog : dog's translate,
+                                            cat : cat's translate,
+                                            hedgehog : hedgehog's translate
+                                        """;
+                                stateAfterRequest = UserState.WRITING_WORDS;
+                                returnKeyboardMarkup = preparedKeyboardMarkups.get("return-to-main");
+                            }
                         }
                     } else if (prevUserState == UserState.WRITING_WORDS) {
                         try {
