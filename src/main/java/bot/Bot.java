@@ -238,7 +238,7 @@ public class Bot extends TelegramLongPollingBot {
                                     String word = parsedLine[0].trim();
                                     String translation = parsedLine[1].trim();
 
-                                    if (!checkFileName(word) || !checkFileName(translation)) {
+                                    if (word.isBlank() || translation.isBlank()) {
                                         sb.append("\t" + line + " has incorrect format\n");
                                     } else {
                                         sheetsController.writeOneCell(SHEET_NAME, curRow, 0, word);
