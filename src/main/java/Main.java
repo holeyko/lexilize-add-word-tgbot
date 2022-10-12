@@ -3,6 +3,7 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 import util.Config;
+import util.SimpleLog;
 
 public class Main {
     public static void main(String[] args) {
@@ -13,7 +14,7 @@ public class Main {
                     System.getenv("BOT_TOKEN")
             ));
         } catch (TelegramApiException e) {
-            throw new RuntimeException(e);
+            SimpleLog.err("Bot didn't start. Error: " + e);
         }
     }
 }
