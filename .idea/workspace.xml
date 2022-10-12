@@ -4,14 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b47ad687-3a89-4daf-9e53-07496a9f9c96" name="Changes" comment="updated .idea folder">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="b47ad687-3a89-4daf-9e53-07496a9f9c96" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/bot/Bot.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/bot/Bot.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/sheets/SheetsControler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/sheets/SheetsControler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/util/Config.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/Config.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/util/FilesController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/DataController.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -248,7 +243,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
@@ -279,12 +286,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/bot/Bot.java</url>
-          <line>226</line>
+          <line>233</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/bot/Bot.java</url>
-          <line>197</line>
+          <line>204</line>
           <option name="timeStamp" value="10" />
         </line-breakpoint>
       </breakpoints>

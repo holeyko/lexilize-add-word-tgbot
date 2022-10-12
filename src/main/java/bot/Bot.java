@@ -28,9 +28,11 @@ public class Bot extends TelegramLongPollingBot {
     private final RequestContextHistory contextHistory;
 
     private final List<String> COMMANDS = List.of("/start", "/help", "/main");
+    private final String SHEET_NAME = "Lexillize";
     private static final int HISTORY_LENGTH = 4;
     private static final int COUNT_BUTTONS_IN_ROW = 2;
-    private final String SHEET_NAME = "Lexillize";
+    private static final int MAX_LENGTH_FILE_NAME = 30;
+    private static final String[] FORBIDDEN_CHAR_SEQUANCE_IN_FILE_NAME = new String[] {".", "/", "\\", "~"};
 
     public Bot(String name, String token) {
         this.name = name;
@@ -153,16 +155,21 @@ public class Bot extends TelegramLongPollingBot {
                     String prevText = prevMessage.getText();
 
                     if (prevUserState == UserState.WRITING_PACK_NAME) {
-                        try {
-                            sheetsController.createExcelFromFile(
-                                    dataController.createFile(getPathToFile(
-                                            Long.toString(chatId), messageText + "." + Config.SHEET_FILE_FORMAT
-                                    ))
-                            );
-                            returnText = messageText + " pack have been successful created.";
-                        } catch (IllegalArgumentException e) {
-                            returnText = messageText + " pack already exists";
-                        } catch (IOException e) {
+                        if (checkFileName(messageText)) {
+                            try {
+                                sheetsController.createExcelFromFile(
+                                        dataController.createFile(getPathToFile(
+                                                Long.toString(chatId), messageText + "." + Config.SHEET_FILE_FORMAT
+                                        ))
+                                );
+
+                                returnText = messageText + " pack have been successful created.";
+                            } catch (IllegalArgumentException e) {
+                                returnText = messageText + " pack already exists";
+                            } catch (IOException e) {
+                                returnText = messageText + " pack has incorrect name";
+                            }
+                        } else {
                             returnText = messageText + " pack has incorrect name";
                         }
                     } else if (prevUserState == UserState.CHOOSING_PACK) {
@@ -230,7 +237,7 @@ public class Bot extends TelegramLongPollingBot {
                                     String word = parsedLine[0].trim();
                                     String translation = parsedLine[1].trim();
 
-                                    if (word.isBlank() || translation.isBlank()) {
+                                    if (!checkFileName(word) || !checkFileName(translation)) {
                                         sb.append("\t" + line + " has incorrect format\n");
                                     } else {
                                         sheetsController.writeOneCell(SHEET_NAME, curRow, 0, word);
@@ -280,6 +287,24 @@ public class Bot extends TelegramLongPollingBot {
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup(rows);
         keyboardMarkup.setResizeKeyboard(isResize);
         return keyboardMarkup;
+    }
+
+    private boolean checkFileName(String fileName) {
+        if (fileName.isBlank()) {
+            return false;
+        }
+
+        if (fileName.length() > MAX_LENGTH_FILE_NAME) {
+            return false;
+        }
+
+        for (String forbiddenSubseq : FORBIDDEN_CHAR_SEQUANCE_IN_FILE_NAME) {
+            if (fileName.contains(forbiddenSubseq)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private String getPathToFile(String pathToFolder, String fileName) {
