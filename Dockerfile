@@ -16,4 +16,4 @@ COPY run.sh .
 EXPOSE 8080
 
 # build and run project
-ENTRYPOINT ./run.sh
+ENTRYPOINT chmod +x ./run.sh && ./run.sh
