@@ -241,21 +241,21 @@ public class Bot extends TelegramLongPollingBot {
                                 String[] parsedLine = line.split(":");
 
                                 if (parsedLine.length != 2) {
-                                    sb.append("\t" + line + ": incorrect format\n");
+                                    sb.append(line + ": incorrect format\n");
                                     ++countFailed;
                                 } else {
                                     String word = parsedLine[0].trim();
                                     String translation = parsedLine[1].trim();
 
                                     if (word.isBlank() || translation.isBlank()) {
-                                        sb.append("\t" + line + ": incorrect format\n");
+                                        sb.append(line + ": incorrect format\n");
                                         ++countFailed;
                                     } else {
                                         sheetsController.writeOneCell(SHEET_NAME, curRow, 0, word);
                                         sheetsController.writeOneCell(SHEET_NAME, curRow, 1, translation);
                                         ++curRow;
 
-                                        sb.append("\t" + word + ": successful\n");
+                                        sb.append(word + ": successful\n");
                                         ++countSuccessful;
                                     }
                                 }
@@ -263,7 +263,7 @@ public class Bot extends TelegramLongPollingBot {
 
                             sheetsController.writeToFile(excel);
                             sheetsController.close();
-                            returnText = String.format("%d were successful added\n%d won't added\n", countSuccessful, countFailed) + sb;
+                            returnText = String.format("%d were successful added\n%d won't added\n\n", countSuccessful, countFailed) + sb;
                         } catch (IOException e) {
                             returnText = "Something went wrong.";
                             SimpleLog.err("Error while writing words to excel file. Error: " + e);
