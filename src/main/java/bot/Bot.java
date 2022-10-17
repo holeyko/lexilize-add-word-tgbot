@@ -228,7 +228,9 @@ public class Bot extends TelegramLongPollingBot {
                     } else if (prevUserState == UserState.WRITING_WORDS) {
                         try {
                             Scanner scan = new Scanner(messageText);
-                            StringBuilder sb = new StringBuilder("Your words:\n");
+                            StringBuilder sb = new StringBuilder();
+                            int countSuccessful = 0;
+                            int countFailed = 0;
 
                             File excel = dataController.openFile(getPathToFile(Long.toString(chatId), prevText + "." + Config.SHEET_FILE_FORMAT));
                             sheetsController.openExcelFile(excel);
@@ -239,26 +241,29 @@ public class Bot extends TelegramLongPollingBot {
                                 String[] parsedLine = line.split(":");
 
                                 if (parsedLine.length != 2) {
-                                    sb.append("\t" + line + " has incorrect format\n");
+                                    sb.append("\t" + line + ": incorrect format\n");
+                                    ++countFailed;
                                 } else {
                                     String word = parsedLine[0].trim();
                                     String translation = parsedLine[1].trim();
 
                                     if (word.isBlank() || translation.isBlank()) {
-                                        sb.append("\t" + line + " has incorrect format\n");
+                                        sb.append("\t" + line + ": incorrect format\n");
+                                        ++countFailed;
                                     } else {
                                         sheetsController.writeOneCell(SHEET_NAME, curRow, 0, word);
                                         sheetsController.writeOneCell(SHEET_NAME, curRow, 1, translation);
                                         ++curRow;
 
-                                        sb.append("\t" + word + " has been successful added\n");
+                                        sb.append("\t" + word + ": successful\n");
+                                        ++countSuccessful;
                                     }
                                 }
                             }
 
                             sheetsController.writeToFile(excel);
                             sheetsController.close();
-                            returnText = sb.toString();
+                            returnText = String.format("%d were successful added\n%d won't added\n", countSuccessful, countFailed) + sb;
                         } catch (IOException e) {
                             returnText = "Something went wrong.";
                             SimpleLog.err("Error while writing words to excel file. Error: " + e);
